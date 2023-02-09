@@ -1,0 +1,52 @@
+version: '3'
+services:
+  web:
+    build: .
+    ports:
+      - 6000:5000
+    environment:
+      FLASK_APP: web/app.py
+      FLASK_ENV: development
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - .:/app
+      - logs:/app/logs
+  db:
+    image: postgres:12.2
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - 5434:5432
+    volumes:
+      - db:/var/lib/postgresql/data
+
+  celery:
+    build: .
+    command: pip run celery -A web.celery worker --loglevel=info
+    environment:
+      FLASK_APP: web/app.py
+      FLASK_ENV: development
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+    volumes:
+      - .:/app
+      - logs:/app/logs
+      - db:/app/persistence/db
+    depends_on:
+      - web
+      - redis
+  redis:
+    image: "redis:5.0"
+    ports:
+      - 6379:6379
+volumes:
+  db:
+  logs:
+

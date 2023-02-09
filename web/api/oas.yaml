@@ -1,0 +1,759 @@
+info:
+  title: web API that allows users to manage spaceship launches
+  version: 1.0.0
+paths:
+  /api/users:
+    get:
+      description: A list of API user accounts
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/GetUserSchema'
+          description: A JSON array of users
+    post:
+      summary: Creates an user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserSchema'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetUserSchema'
+          description: A JSON representation of the created user
+  /api/users/{user_id}:
+    get:
+      summary: Returns the details of a specific user
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetUserSchema'
+          description: A JSON representation of a user
+    put:
+      description: Replaces an existing user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserSchema'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetUserSchema'
+          description: A JSON representation of a user
+    delete:
+      description: Deletes an existing user
+      responses:
+        '204':
+          description: The resource was deleted successfully
+    parameters:
+      - in: path
+        name: user_id
+        schema:
+          type: string
+        required: true
+  /api/rockets:
+    get:
+      description: A list of rockets
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/GetRocketSchema'
+          description: A JSON array of users
+    post:
+      summary: Creates a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RocketSchema'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetRocketSchema'
+          description: A JSON representation of the created rocket
+  /api/rockets/{rocket_id}:
+    get:
+      summary: Returns the details of a specific rocket
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetRocketSchema'
+          description: A JSON representation of a rocket
+    put:
+      description: Replaces an existing rocket
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RocketSchema'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetRocketSchema'
+          description: A JSON representation of a rocket
+    delete:
+      description: Deletes an existing user
+      responses:
+        '204':
+          description: The resource was deleted successfully
+    parameters:
+      - in: path
+        name: rocket_id
+        schema:
+          type: string
+        required: true
+  /api/customers:
+    get:
+      description: A list of customers
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/GetCustomerSchema'
+          description: A JSON array of customers
+    post:
+      summary: Creates a customer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomerSchema'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetCustomerSchema'
+          description: A JSON representation of the created customers
+  /api/customers/{customer_id}:
+    get:
+      summary: Returns the details of a specific customer
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetCustomerSchema'
+          description: A JSON representation of a customer
+    put:
+      description: Replaces an existing customer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomerSchema'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetCustomerSchema'
+          description: A JSON representation of a customer
+    delete:
+      description: Deletes an existing customer
+      responses:
+        '204':
+          description: The resource was deleted successfully
+    parameters:
+      - in: path
+        name: customer_id
+        schema:
+          type: string
+        required: true
+  /api/flights:
+    get:
+      description: A list of flights
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/GetFlightSchema'
+          description: A JSON array of flights
+    post:
+      summary: Creates a flight
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FlightSchema'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetCustomerSchema'
+          description: A JSON representation of the created flight
+  /api/flights/{flight_id}:
+    get:
+      summary: Returns the details of a specific flight
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetFlightSchema'
+          description: A JSON representation of a flight
+    put:
+      description: Replaces an existing flight
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FlightSchema'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetFlightSchema'
+          description: A JSON representation of a flight
+    delete:
+      description: Deletes an existing flight
+      responses:
+        '204':
+          description: The resource was deleted successfully
+    parameters:
+      - in: path
+        name: flight_id
+        schema:
+          type: string
+        required: true
+  /api/cargos:
+    get:
+      description: A list of cargos
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/GetCargoSchema'
+          description: A JSON array of cargo
+    post:
+      summary: Creates a cargo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CargoSchema'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetCargoSchema'
+          description: A JSON representation of the created cargo
+  /api/cargos/{cargo_id}:
+    get:
+      summary: Returns the details of a specific cargo
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetCargoSchema'
+          description: A JSON representation of a cargo
+    put:
+      description: Replaces an existing cargo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CargoSchema'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetCargoSchema'
+          description: A JSON representation of a cargo
+    delete:
+      description: Deletes an existing cargo
+      responses:
+        '204':
+          description: The resource was deleted successfully
+    parameters:
+      - in: path
+        name: cargo_id
+        schema:
+          type: string
+        required: true
+  /api/upload_csv_or_xls:
+    post:
+      summary: Upload a CSV or XLS file
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UploadFileSchema'
+      responses:
+        '200':
+          content:
+            multipart/form-data:
+              schema:
+                $ref: '#/components/schemas/PreviewDataSchema'
+          description: A preview of the data from the uploaded file
+  /login:
+    post:
+      summary: Endpoint to authenticate users
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenSchema'
+          description: Success Logged in user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginSchema'
+  /logout:
+    post:
+      summary: Endpoint to log users out
+      responses:
+        '204':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/None'
+          description: Success Logged out user
+  /refresh:
+    post:
+      summary: Endpoint to refresh user tokens
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenSchema'
+          description: Success obtained new token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenSchema'
+openapi: 3.0.2
+components:
+  schemas:
+    UserSchema:
+      type: object
+      properties:
+        email:
+          type: string
+        username:
+          type: string
+        password:
+          type: string
+      required:
+        - email
+        - password
+        - username
+    CargoSchema:
+      type: object
+      properties:
+        payload_type:
+          type: string
+        name:
+          type: string
+        mass:
+          type: number
+        orbit:
+          type: string
+      required:
+        - mass
+        - name
+        - orbit
+        - payload_type
+    FlightSchema:
+      type: object
+      properties:
+        launch_time:
+          type: string
+        launch_date:
+          type: string
+        failure_reason:
+          type: string
+        flight_status:
+          type: string
+          enum:
+            - schedule
+            - countdown
+            - abort
+            - launch
+        cargo_id:
+          type: array
+          items:
+            type: integer
+        customer_id:
+          type: array
+          items:
+            type: integer
+        launch_site:
+          type: string
+        rocket_id:
+          type: integer
+        number:
+          type: string
+        landing_outcome:
+          type: string
+        mission_outcome:
+          type: string
+        landing_type:
+          type: string
+          enum:
+            - parachute
+            - ocean
+            - ship
+            - land
+            - none
+      required:
+        - cargo_id
+        - customer_id
+        - landing_type
+        - rocket_id
+    CustomerSchema:
+      type: object
+      properties:
+        country:
+          type: string
+        name:
+          type: string
+        customer_type:
+          type: string
+          enum:
+            - government
+            - business
+      required:
+        - customer_type
+    RocketSchema:
+      type: object
+      properties:
+        vehicle_type:
+          type: string
+    GetRocket:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        flights:
+          $ref: '#/components/schemas/GetFlight'
+        vehicle_type:
+          type: string
+      required:
+        - id
+    GetCargo:
+      type: object
+      properties:
+        payload_type:
+          type: string
+        name:
+          type: string
+        orbit:
+          type: string
+        flight_id:
+          $ref: '#/components/schemas/GetFlight'
+        id:
+          type: string
+          format: uuid
+        mass:
+          type: number
+      required:
+        - id
+        - mass
+        - name
+        - orbit
+        - payload_type
+    GetFlight:
+      type: object
+      properties:
+        launch_time:
+          type: string
+        launch_date:
+          type: string
+        failure_reason:
+          type: string
+        rocket:
+          $ref: '#/components/schemas/GetRocket'
+        flight_status:
+          type: string
+          enum:
+            - schedule
+            - countdown
+            - abort
+            - launch
+        cargo_id:
+          type: array
+          items:
+            type: integer
+        customer_id:
+          type: array
+          items:
+            type: integer
+        launch_site:
+          type: string
+        rocket_id:
+          type: integer
+        customers:
+          $ref: '#/components/schemas/GetCustomerSchema'
+        number:
+          type: string
+        cargos:
+          $ref: '#/components/schemas/GetCargo'
+        id:
+          type: string
+          format: uuid
+        landing_outcome:
+          type: string
+        mission_outcome:
+          type: string
+        landing_type:
+          type: string
+          enum:
+            - parachute
+            - ocean
+            - ship
+            - land
+            - none
+      required:
+        - cargo_id
+        - customer_id
+        - id
+        - landing_type
+        - rocket_id
+    GetCustomerSchema:
+      type: object
+      properties:
+        name:
+          type: string
+        country:
+          type: string
+        customer_type:
+          type: string
+          enum:
+            - government
+            - business
+        flight_id:
+          $ref: '#/components/schemas/GetFlight'
+        id:
+          type: string
+          format: uuid
+      required:
+        - customer_type
+        - id
+    GetFlightSchema:
+      type: object
+      properties:
+        launch_time:
+          type: string
+        launch_date:
+          type: string
+        failure_reason:
+          type: string
+        rocket:
+          $ref: '#/components/schemas/GetRocket'
+        flight_status:
+          type: string
+          enum:
+            - schedule
+            - countdown
+            - abort
+            - launch
+        cargo_id:
+          type: array
+          items:
+            type: integer
+        customer_id:
+          type: array
+          items:
+            type: integer
+        launch_site:
+          type: string
+        rocket_id:
+          type: integer
+        customers:
+          $ref: '#/components/schemas/GetCustomerSchema'
+        number:
+          type: string
+        cargos:
+          $ref: '#/components/schemas/GetCargo'
+        id:
+          type: string
+          format: uuid
+        landing_outcome:
+          type: string
+        mission_outcome:
+          type: string
+        landing_type:
+          type: string
+          enum:
+            - parachute
+            - ocean
+            - ship
+            - land
+            - none
+      required:
+        - cargo_id
+        - customer_id
+        - id
+        - landing_type
+        - rocket_id
+    GetRocketSchema:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        flights:
+          $ref: '#/components/schemas/GetFlightSchema'
+        vehicle_type:
+          type: string
+      required:
+        - id
+    GetCargoSchema:
+      type: object
+      properties:
+        payload_type:
+          type: string
+        name:
+          type: string
+        orbit:
+          type: string
+        flight_id:
+          $ref: '#/components/schemas/GetFlightSchema'
+        id:
+          type: string
+          format: uuid
+        mass:
+          type: number
+      required:
+        - id
+        - mass
+        - name
+        - orbit
+        - payload_type
+    GetUserSchema:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+        date_modified:
+          type: string
+          format: date-time
+        date_created:
+          type: string
+          format: date-time
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+      required:
+        - email
+        - id
+        - password
+        - username
+    UpdateUserSchema:
+      type: object
+      properties:
+        email:
+          type: string
+        username:
+          type: string
+      required:
+        - email
+        - username
+    LoginSchema:
+      type: object
+      properties:
+        password:
+          type: string
+        username:
+          type: string
+      required:
+        - password
+        - username
+    RefreshTokenSchema:
+      type: object
+      properties:
+        refresh_token:
+          type: string
+      required:
+        - refresh_token
+    TokenSchema:
+      type: object
+      properties:
+        refresh_token:
+          type: string
+        access_token:
+          type: string
+      required:
+        - access_token
+        - refresh_token
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: 'bearerAuth:'
+      scheme: bearer
+      bearerFormat: JWT
