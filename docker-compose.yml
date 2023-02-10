@@ -26,7 +26,7 @@ services:
 
   celery:
     build: .
-    command: pip run celery -A web.celery worker --loglevel=info
+    command: celery -A web.celery worker --loglevel=info
     environment:
       FLASK_APP: web/app.py
       FLASK_ENV: development
