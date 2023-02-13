@@ -1,40 +1,39 @@
 version: '3'
 services:
   web:
-    build: .
+    build:
+      context: web
+      dockerfile: Dockerfile
     ports:
-      - 6000:5000
-    environment:
-      FLASK_APP: web/app.py
-      FLASK_ENV: development
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      - 5000:5000
+    env_file:
+      - docker_secrets.env
     volumes:
       - .:/app
       - logs:/app/logs
+    links:
+      - redis
+    networks:
+      - altex-network
+    container_name: flask
   db:
     image: postgres:12.2
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    env_file:
+      - docker_secrets.env
     ports:
-      - 5434:5432
+      - '5434:5432'
     volumes:
       - db:/var/lib/postgresql/data
-
+    networks:
+      - altex-network
+    container_name: postgres_db
   celery:
-    build: .
-    command: celery -A web.celery worker --loglevel=info
-    environment:
-      FLASK_APP: web/app.py
-      FLASK_ENV: development
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      CELERY_BROKER_URL: redis://redis:6379/0
-      CELERY_RESULT_BACKEND: redis://redis:6379/0
+    build:
+      context: ./tasks
+      dockerfile: Dockerfile
+    command: celery -A web.celery_app:celery worker --loglevel=info
+    env_file:
+      - docker_secrets.env
     volumes:
       - .:/app
       - logs:/app/logs
@@ -42,11 +41,19 @@ services:
     depends_on:
       - web
       - redis
+    networks:
+      - altex-network
+    container_name: celery
   redis:
-    image: "redis:5.0"
+    image: 'redis:5.0'
     ports:
-      - 6379:6379
+      - '6379:6379'
+    networks:
+      - altex-network
+    container_name: redis
+networks:
+  altex-network:
+    driver: bridge
 volumes:
   db:
   logs:
-
