@@ -83,7 +83,7 @@ class FlightSchema(Schema):
 
     customer_id = fields.List(fields.Int(), required=True)
     cargo_id = fields.List(fields.Int(), required=True)
-    rocket_id = fields.Integer(required=True)
+    # rocket_id = fields.Integer(required=True)
     flight_status = fields.String(
         validate=validate.OneOf(
             ['schedule', 'countdown', 'abort', 'launch']
@@ -109,9 +109,9 @@ class GetFlightSchema(FlightSchema):
         unknown = EXCLUDE
 
     id = fields.UUID(required=True)
-    rocket = fields.Nested(GetRocketSchema)
-    customers = fields.Nested(GetCustomerSchema)
-    cargos = fields.Nested(GetCargoSchema)
+    # rocket = fields.Nested(GetRocketSchema)
+    # customers = fields.Nested(GetCustomerSchema)
+    # cargos = fields.Nested(GetCargoSchema)
 
 
 class QueryFlightSchema(Schema):
@@ -127,12 +127,19 @@ class QueryFlightSchema(Schema):
 
 class UploadCSVorXLSArgs(Schema):
     file = fields.Field(required=True)
-    sheet_index = fields.Int(missing=0,
-                             description="Index of the sheet in the file to be processed")
-    header_row = fields.Int(missing=0,
-                            description="Row number that contains the header information in the sheet")
-    should_preview = fields.Bool(missing=False,
-                                 description="Flag indicating whether to return a preview of the data or to actually process the data")
+
+
+class TaskStatusRequest(Schema):
+    task_id = fields.String(required=True)
+
+
+class GetTaskStatus(Schema):
+    task_id = fields.String()
+    task_name = fields.String()
+    task_status = fields.String(validate=validate.OneOf(
+        ['SUCCESS', 'RETRY', 'PENDING', 'STARTED', 'FAILURE']
+    ), )
+    task_info = fields.Dict()
 
 
 class RefreshTokenSchema(Schema):

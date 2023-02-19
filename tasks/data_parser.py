@@ -1,27 +1,26 @@
 import datetime
 import logging
-from typing import BinaryIO, Union, Any, Dict, List
+from typing import Union, Dict, List
 import pandas as pd
 import psycopg2
-from flask import current_app, Flask, jsonify
+from flask import current_app
 from app_loggers.logger import LoggerObserver
 from datetime import datetime
-# app_ = Flask(__name__)
 
+from web.celery_app import celery
 
 logger = LoggerObserver(__name__).logger
 logger.setLevel(logger.level)
 
 
-def read_csv_or_xls(file: Union[str, BinaryIO]) -> Dict[str, List[Dict[str, Union[str, int]]]]:
-    file_extension = file.filename.rsplit(".", 1)[1] if hasattr(file, "filename") else file.rsplit(".", 1)[1]
+def read_csv_or_xls(filename: str) -> Dict[str, List[Dict[str, Union[str, int]]]]:
+    file_extension = filename.rsplit(".", 1)[-1]
     if file_extension not in ["csv", "xls", "xlsx"]:
         raise ValueError("Invalid file format. Only .csv and .xls/.xlsx formats are supported.")
-
     if file_extension in ["csv"]:
-        df = pd.read_csv(file)
+        df = pd.read_csv(filename)
     else:
-        df = pd.read_excel(file)
+        df = pd.read_excel(filename)
 
     rockets = []
     rocket_ids = {}
@@ -80,66 +79,68 @@ def read_csv_or_xls(file: Union[str, BinaryIO]) -> Dict[str, List[Dict[str, Unio
     return result
 
 
-def upload_csv_or_xls(file):
+@celery.task
+def upload_csv_or_xls(file_path):
     try:
-        data = read_csv_or_xls(file)
+        data = read_csv_or_xls(file_path)
     except Exception as e:
         logger.log(level=logging.ERROR, msg=str(e))
         raise Exception('File could not be uploaded, wil try again later')
-
-    session = current_app.session()
-    try:
-        session.begin()
-        with session:
-            customers_repo = current_app.repositories.customers_repo(session)
-            rockets_repo = current_app.repositories.rockets_repo(session)
-            cargos_repo = current_app.repositories.cargos_repo(session)
-            flights_repo = current_app.repositories.flights_repo(session)
-
-            for row in data['rockets']:
-                try:
-                    rockets_repo.add(vehicle_type=row['vehicle_type'])
-                except Exception as e:
-                    logger.log(level=logging.ERROR, msg=f"Error adding rocket data: {e}")
-
-            for row in data['customers']:
-                try:
-                    customers_repo.add(name=row['customer_name'], customer_type=row['customer_type'], country=row['country'])
-                except Exception as e:
-                    logger.log(level=logging.ERROR, msg=f"Error adding customer data: {e}")
-
-            for row in data['cargos']:
-                try:
-                    cargos_repo.add(name=row['name'], payload_type=row['payload_type'], mass=row['mass'],
-                                    orbit=row['orbit'])
-                except Exception as e:
-                    logger.log(level=logging.ERROR, msg=f"Error adding cargo data: {e}")
-            session.commit()
+    from web.app import app
+    with app.app_context():
+        session = current_app.session()
+        try:
             session.begin()
-            for row in data['flights']:
-                try:
-                    time = datetime.strptime(row['launch_time'], "%H:%M").time()
-                    date = datetime.strptime(row['launch_date'], "%d %B %Y").date()
+            with session:
+                customers_repo = current_app.repositories.customers_repo(session)
+                rockets_repo = current_app.repositories.rockets_repo(session)
+                cargos_repo = current_app.repositories.cargos_repo(session)
+                flights_repo = current_app.repositories.flights_repo(session)
 
+                for row in data['rockets']:
+                    try:
+                        rockets_repo.add(vehicle_type=row['vehicle_type'])
+                    except Exception as e:
+                        logger.log(level=logging.ERROR, msg=f"Error adding rocket data: {e}")
 
-                    # Combine the date and time into a single timestamp value
-                    launch_time = datetime.combine(date, time)
-                    # customers = customers_repo.get_multiple([cust_id for cust_id in row['customer_id']], True)
-                    # cargos = cargos_repo.get_multiple([cargo_id for cargo_id in row['cargo_id']], True)
-                    flights_repo.add(
-                        number=row['number'], launch_date=row['launch_date'], flight_status=row['flight_status'],
-                        launch_time=launch_time, launch_site=row['launch_site'],
-                        mission_outcome=row['mission_outcome'],
-                        failure_reason=row['failure_reason'], landing_type=row['landing_type'],
-                        landing_outcome=row['landing_outcome'])
-                except psycopg2.Error as e:
-                    logger.log(level=logging.ERROR, msg=f"Error adding flight data: {e}")
+                for row in data['customers']:
+                    try:
+                        customers_repo.add(name=row['customer_name'], customer_type=row['customer_type'],
+                                           country=row['country'])
+                    except Exception as e:
+                        logger.log(level=logging.ERROR, msg=f"Error adding customer data: {e}")
 
-            session.commit()
-    except Exception as e:
-        logger.log(level=logging.ERROR, msg=f"Error processing the whole data: {e}")
-        session.rollback()
-    else:
-        logger.log(level=logging.DEBUG, msg='data successfully loaded')
-    finally:
-        session.close()
+                for row in data['cargos']:
+                    try:
+                        cargos_repo.add(name=row['name'], payload_type=row['payload_type'], mass=row['mass'],
+                                        orbit=row['orbit'])
+                    except Exception as e:
+                        logger.log(level=logging.ERROR, msg=f"Error adding cargo data: {e}")
+                session.commit()
+                session.begin()
+                for row in data['flights']:
+                    try:
+                        time = datetime.strptime(row['launch_time'], "%H:%M").time()
+                        date = datetime.strptime(row['launch_date'], "%d %B %Y").date()
+
+                        # Combine the date and time into a single timestamp value
+                        launch_time = datetime.combine(date, time)
+                        # customers = customers_repo.get_multiple([cust_id for cust_id in row['customer_id']], True)
+                        # cargos = cargos_repo.get_multiple([cargo_id for cargo_id in row['cargo_id']], True)
+                        flights_repo.add(
+                            number=row['number'], launch_date=row['launch_date'], flight_status=row['flight_status'],
+                            launch_time=launch_time, launch_site=row['launch_site'],
+                            mission_outcome=row['mission_outcome'],
+                            failure_reason=row['failure_reason'], landing_type=row['landing_type'],
+                            landing_outcome=row['landing_outcome'])
+                    except psycopg2.Error as e:
+                        logger.log(level=logging.ERROR, msg=f"Error adding flight data: {e}")
+
+                session.commit()
+        except Exception as e:
+            logger.log(level=logging.ERROR, msg=f"Error processing the whole data: {e}")
+            session.rollback()
+        else:
+            logger.log(level=logging.DEBUG, msg='data successfully loaded')
+        finally:
+            session.close()

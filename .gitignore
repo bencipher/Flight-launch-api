@@ -1,3 +1,11 @@
 web/web.api.api.log
 logs/
 .idea
+run-*
+.idea/*
+.idea/**
+**/__pycache__
+*.iml
+.idea/altex-api.iml
+.idea/modules.xml
+.vscode/

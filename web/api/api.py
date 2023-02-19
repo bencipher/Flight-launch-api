@@ -1,20 +1,21 @@
+import os
 import logging
-
 from flask import current_app, jsonify, request
 from flask.views import MethodView
 from flask_smorest import Blueprint
-from flask_jwt_extended import jwt_required, get_jwt_identity
 import sys
 
 from webargs.flaskparser import use_args
 
+from celery.result import AsyncResult
 from app_loggers.logger import LoggerObserver
 from tasks.data_parser import upload_csv_or_xls
+from web.celery_app import celery
 
 sys.path.append("../utils")
 from .schemas import (CargoSchema, FlightSchema, RocketSchema, CustomerSchema, GetCustomerSchema,
                       GetFlightSchema, GetRocketSchema, GetCargoSchema, GetUserSchema, QueryFlightSchema, UserSchema,
-                      UploadCSVorXLSArgs, UpdateUserSchema)
+                      UploadCSVorXLSArgs, UpdateUserSchema, GetTaskStatus, TaskStatusRequest)
 
 api_blueprint = Blueprint("api", __name__, description="Altex API")
 
@@ -24,7 +25,7 @@ logger.setLevel(logger.level)
 
 @api_blueprint.route("/api/users")
 class Users(MethodView):
-    
+
     @api_blueprint.response(status_code=200, schema=GetUserSchema(many=True))
     def get(self):
         try:
@@ -36,7 +37,6 @@ class Users(MethodView):
         except Exception as e:
             return jsonify(error=str(e)), 404
 
-    
     @api_blueprint.arguments(UserSchema(partial=False))
     @api_blueprint.response(status_code=201, schema=GetUserSchema)
     def post(self, payload):
@@ -54,7 +54,7 @@ class Users(MethodView):
 
 @api_blueprint.route("/api/users/<user_id>")
 class User(MethodView):
-    
+
     @api_blueprint.response(status_code=200, schema=GetUserSchema)
     def get(self, user_id):
         session = current_app.session()
@@ -66,7 +66,6 @@ class User(MethodView):
         except Exception as e:
             return jsonify(error=str(e)), 400
 
-    
     @api_blueprint.arguments(UpdateUserSchema)
     @api_blueprint.response(status_code=200, schema=GetUserSchema)
     def put(self, payload, user_id):
@@ -80,7 +79,6 @@ class User(MethodView):
         except Exception as e:
             return jsonify(error=str(e)), 400
 
-    
     @api_blueprint.response(status_code=204)
     def delete(self, user_id):
         try:
@@ -96,7 +94,6 @@ class User(MethodView):
 @api_blueprint.route("/api/rockets")
 class Rockets(MethodView):
 
-    
     @api_blueprint.response(status_code=200, schema=GetRocketSchema(many=True))
     def get(self):
         try:
@@ -108,13 +105,12 @@ class Rockets(MethodView):
         except Exception as e:
             return jsonify(error=str(e)), 500
 
-    
     @api_blueprint.arguments(RocketSchema)
     @api_blueprint.response(status_code=201, schema=GetRocketSchema)
     def post(self, payload):
         session = current_app.session()
         try:
-            rocket_repo = current_app.repositories.rockets_repo(s)
+            rocket_repo = current_app.repositories.rockets_repo(session)
             rocket = rocket_repo.add(**payload)
             session.commit()
             return rocket
@@ -126,7 +122,6 @@ class Rockets(MethodView):
 @api_blueprint.route("/api/rockets/<rocket_id>")
 class Rocket(MethodView):
 
-    
     @api_blueprint.response(status_code=200, schema=GetRocketSchema)
     def get(self, rocket_id):
         session = current_app.session()
@@ -139,7 +134,6 @@ class Rocket(MethodView):
             logger.log(level=logging.ERROR, msg=str(e))
             return jsonify(error=str(e)), 404
 
-    
     @api_blueprint.arguments(RocketSchema)
     @api_blueprint.response(status_code=200, schema=GetRocketSchema)
     def put(self, payload, rocket_id):
@@ -153,7 +147,6 @@ class Rocket(MethodView):
         except Exception as e:
             return jsonify(error=str(e)), 400
 
-    
     @api_blueprint.response(status_code=204)
     def delete(self, rocket_id):
         try:
@@ -168,7 +161,7 @@ class Rocket(MethodView):
 
 @api_blueprint.route("/api/customers")
 class Customers(MethodView):
-    
+
     @api_blueprint.response(status_code=200, schema=GetCustomerSchema(many=True))
     def get(self):
         try:
@@ -180,13 +173,12 @@ class Customers(MethodView):
         except Exception as e:
             return jsonify(error=str(e)), 500
 
-    
     @api_blueprint.arguments(CustomerSchema)
     @api_blueprint.response(status_code=201, schema=GetCustomerSchema)
     def post(self, payload):
         session = current_app.session()
         try:
-            customers_repo = current_app.repositories.customers_repo(s)
+            customers_repo = current_app.repositories.customers_repo(session)
             customer = customers_repo.add(**payload)
             session.commit()
             return customer
@@ -197,7 +189,7 @@ class Customers(MethodView):
 
 @api_blueprint.route("/api/rockets/<customer_id>")
 class Customer(MethodView):
-    
+
     @api_blueprint.response(status_code=200, schema=GetCustomerSchema)
     def get(self, customer_id):
         session = current_app.session()
@@ -210,7 +202,6 @@ class Customer(MethodView):
             logger.log(level=logging.ERROR, msg=str(e))
             return jsonify(error=str(e)), 404
 
-    
     @api_blueprint.arguments(CustomerSchema)
     @api_blueprint.response(status_code=200, schema=GetCustomerSchema)
     def put(self, payload, customer_id):
@@ -224,7 +215,6 @@ class Customer(MethodView):
         except Exception as e:
             return jsonify(error=str(e)), 400
 
-    
     @api_blueprint.response(status_code=204)
     def delete(self, customer_id):
         try:
@@ -241,7 +231,7 @@ class Customer(MethodView):
 class Flight(MethodView):
 
     # @blueprint.arguments(QueryFlightSchema, location="query")
-    
+
     @api_blueprint.response(status_code=200, schema=GetFlightSchema)
     def get(self, flight_id):
         session = current_app.session()
@@ -254,7 +244,6 @@ class Flight(MethodView):
             logger.log(level=logging.ERROR, msg=str(e))
             return jsonify(error=str(e)), 404
 
-    
     @api_blueprint.arguments(FlightSchema)
     @api_blueprint.response(status_code=200, schema=GetFlightSchema)
     def put(self, payload, flight_id):
@@ -277,7 +266,6 @@ class Flight(MethodView):
         except Exception as e:
             return {'message': 'An unexpected error has occurred'}, 500
 
-    
     @api_blueprint.response(status_code=204)
     def delete(self, flight_id):
         try:
@@ -293,7 +281,6 @@ class Flight(MethodView):
 @api_blueprint.route("/api/flights")
 class Flights(MethodView):
 
-    
     @api_blueprint.response(status_code=200, schema=GetFlightSchema(many=True))
     def get(self):
         session = current_app.session()
@@ -306,7 +293,6 @@ class Flights(MethodView):
             logger.log(level=logging.ERROR, msg=str(e))
             return jsonify(error=str(e)), 404
 
-    
     @api_blueprint.arguments(FlightSchema)
     @api_blueprint.response(status_code=201, schema=GetFlightSchema)
     def post(self, payload):
@@ -334,7 +320,6 @@ class Flights(MethodView):
 @api_blueprint.route("/api/cargos/<cargo_id>")
 class Cargo(MethodView):
 
-    
     @api_blueprint.response(status_code=200, schema=GetCargoSchema)
     def get(self, cargo_id):
         session = current_app.session()
@@ -347,7 +332,6 @@ class Cargo(MethodView):
             logger.log(level=logging.ERROR, msg=str(e))
             return jsonify(error=str(e)), 404
 
-    
     @api_blueprint.arguments(CargoSchema)
     @api_blueprint.response(status_code=200, schema=GetCargoSchema)
     def put(self, payload, cargo_id):
@@ -361,7 +345,6 @@ class Cargo(MethodView):
         except Exception as e:
             return jsonify(error=str(e)), 400
 
-    
     @api_blueprint.response(status_code=204)
     def delete(self, cargo_id):
         try:
@@ -377,7 +360,6 @@ class Cargo(MethodView):
 @api_blueprint.route("/api/cargos")
 class Cargos(MethodView):
 
-    
     @api_blueprint.response(status_code=200, schema=GetCargoSchema(many=True))
     def get(self):
         try:
@@ -389,14 +371,13 @@ class Cargos(MethodView):
         except Exception as e:
             return jsonify(error=str(e)), 500
 
-    
     @api_blueprint.arguments(CargoSchema)
     @api_blueprint.response(status_code=201, schema=GetCargoSchema)
     def post(self, payload):
         session = current_app.session()
         try:
             with session as s:
-                cargos_repo = current_app.repositories.cargos_repo(s)
+                cargos_repo = current_app.repositories.cargos_repo(session)
                 cargo = cargos_repo.add(**payload)
                 return cargo
         except Exception as e:
@@ -423,13 +404,28 @@ def _validate_flight_extras(session, rocket_id, customer_ids, cargo_ids):
         raise ValueError(f"Cargos with ids {missing_cargos} don't exist")
     return rocket, customers, cargos
 
+
 @api_blueprint.route('/api/upload_csv_or_xls', methods=['POST'])
 @use_args(UploadCSVorXLSArgs(), location='files')
 def upload_logs(args):
-    file = request.files['file']
-    sheet_index = args['sheet_index']
-    header_row = args['header_row']
-    should_preview = args['should_preview']
-    upload_csv_or_xls(file)
-    # Add your implementation to process the file here
-    return {'message': 'File queued for batch processing'}, 200
+    file = args['file']
+    file_path = os.path.join(os.getcwd(), 'uploaded_files', file.filename)
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    file.save(file_path)
+    result = upload_csv_or_xls.apply_async(args=(file_path,))
+    logger.log(level=logging.DEBUG, msg=result)
+    return {'message': f'File queued for batch processing with task-id: {result.task_id}'}, 200
+
+
+@api_blueprint.route("/api/task", methods=['GET'])
+@api_blueprint.arguments(TaskStatusRequest, location='query')
+@api_blueprint.response(status_code=200, schema=GetTaskStatus)
+def task_status(query):
+    task = AsyncResult(query.get("task_id"), app=celery)
+    response = {
+        "task_id": task.id,
+        "name": task.name,
+        "status": task.status,
+        "details": task.info
+    }
+    return jsonify(response), 200
